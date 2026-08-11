@@ -23,6 +23,7 @@ from radiosim.channel.spatial_channel import (
 	PropagationPath,
 	SpatialMultipathChannel
 )
+from radiosim.channel.doa import music_spectrum, estimate_peaks
 
 
 
@@ -110,7 +111,20 @@ def main():
 	print(f"    - Shape:             {iq_matrix.shape} (Antennas x Samples)")
 	print(f"    - Data Type:         {iq_matrix.dtype}")
 
-	# 5. Analyze and Print Per-Antenna Phase Progression (Sample n = 15)
+	# 5. Run MUSIC on a clean single-path snapshot for a deterministic DOA demo.
+	doa_iq = channel.simulate(sources=source)
+	scan_angles = np.linspace(-90.0, 90.0, 1801)
+	scan_angles, music_power = music_spectrum(
+		doa_iq, array, scan_angles, num_sources=1
+	)
+	estimated_angles = estimate_peaks(
+		scan_angles, music_power, num_peaks=1
+	)
+	print(f"\n[5] MUSIC DOA estimate:")
+	print(f"    - True angle:       {source.aoa_deg:.1f} deg")
+	print(f"    - Estimated angle:  {estimated_angles[0]:.1f} deg")
+
+	# 6. Analyze and Print Per-Antenna Phase Progression (Sample n = 15)
 	sample_idx = 15
 	print(f"\n[5] Per-Antenna Spatial IQ Response at Sample n={sample_idx}:")
 	print(f"    {'Antenna':<8} {'Position (m)':<15} {'Complex Value (I + jQ)':<30} {'Magnitude':<12} {'Phase (deg)':<12}")
@@ -131,7 +145,7 @@ def main():
 		diff = (phases[m] - phases[0] + 180) % 360 - 180
 		print(f"    Antenna {m}: Delta Phase = {diff:+7.2f} deg")
 
-	# 6. Optional Matplotlib Visualization
+	# 7. Optional Matplotlib Visualization
 	try:
 		import matplotlib.pyplot as plt
 		

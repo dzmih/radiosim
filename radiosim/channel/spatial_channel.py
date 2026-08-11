@@ -68,6 +68,77 @@ class UniformLinearArray:
 		return np.exp(1j * phase)
 
 
+class UniformCircularArray:
+	"""
+	Uniform Circular Array (UCA) antenna model.
+
+	Attributes:
+		num_elements (int): Number of antenna elements (M).
+		radius (float): Radius of the circular array in meters (r).
+		carrier_frequency (float): Carrier frequency in Hz (fc).
+		speed_of_light (float): Propagation speed of light in m/s (c).
+		orientation (float): Array rotation offset in radians (default 0).
+	"""
+
+	def __init__(
+		self,
+		num_elements: int,
+		radius: float,
+		carrier_frequency: float,
+		speed_of_light: float = 299792458.0,
+		orientation: float = 0.0,
+	):
+		if num_elements < 1:
+			raise ValueError("num_elements must be at least 1")
+		if radius <= 0:
+			raise ValueError("radius must be positive")
+		if carrier_frequency <= 0:
+			raise ValueError("carrier_frequency must be positive")
+
+		self.num_elements = int(num_elements)
+		self.radius = float(radius)
+		self.carrier_frequency = float(carrier_frequency)
+		self.speed_of_light = float(speed_of_light)
+		# orientation offset (radians) to rotate element positions
+		self.orientation = float(orientation)
+
+	@property
+	def wavelength(self) -> float:
+		"""Signal wavelength in meters (lambda = c / fc)."""
+		return self.speed_of_light / self.carrier_frequency
+
+	@property
+	def element_positions(self) -> np.ndarray:
+		"""Return element (x,y) positions for uniformly spaced elements on the circle.
+
+		Shape: (num_elements, 2)
+		"""
+		angles = np.arange(self.num_elements, dtype=np.float64) * (2.0 * np.pi / self.num_elements) + self.orientation
+		x = self.radius * np.cos(angles)
+		y = self.radius * np.sin(angles)
+		return np.vstack((x, y)).T
+
+	def steering_vector(self, angle: float, is_degrees: bool = True) -> np.ndarray:
+		"""
+		Calculate the steering vector for a far-field plane wave impinging from azimuth `angle`.
+
+		We compute phase = -2pi / lambda * (x * cos(theta) + y * sin(theta)).
+
+		Args:
+			angle: Azimuth of arrival (radians or degrees depending on `is_degrees`).
+			is_degrees: If True, `angle` is in degrees.
+
+		Returns:
+			Complex array of shape (num_elements,).
+		"""
+		theta = np.radians(angle) if is_degrees else float(angle)
+		pos = self.element_positions  # (M,2)
+		kx = np.cos(theta)
+		ky = np.sin(theta)
+		phase = -2.0 * np.pi * (pos[:, 0] * kx + pos[:, 1] * ky) / self.wavelength
+		return np.exp(1j * phase)
+
+
 class SignalSource:
 	"""
 	Represents an RF signal source emitting a complex baseband waveform.

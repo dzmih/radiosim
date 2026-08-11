@@ -2,9 +2,14 @@ from .node import *
 from .channel import (
 	Channel as PythonChannel,
 	UniformLinearArray,
+	UniformCircularArray,
 	SignalSource,
 	PropagationPath,
-	SpatialMultipathChannel
+	SpatialMultipathChannel,
+	sample_covariance,
+	bartlett_spectrum,
+	music_spectrum,
+	estimate_peaks
 )
 
 try:
